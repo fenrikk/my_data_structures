@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::os::raw::{c_int, c_void};
 
 type Link<T> = Option<Rc<RefCell<Node<T>>>>;
 
@@ -90,10 +91,6 @@ impl<T> Stack<T> {
         self.items.last()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
     pub fn size(&self) -> usize {
         self.items.len()
     }
@@ -124,15 +121,86 @@ impl<T> Queue<T> {
         self.items.first()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
     pub fn size(&self) -> usize {
         self.items.len()
     }
 }
 
+// === C API ===
+
+#[no_mangle]
+pub extern "C" fn stack_new() -> *mut Stack<c_int> {
+    Box::into_raw(Box::new(Stack::new()))
+}
+
+#[no_mangle]
+pub extern "C" fn stack_push(stack: *mut Stack<c_int>, value: c_int) {
+    let stack = unsafe { &mut *stack };
+    stack.push(value);
+}
+
+#[no_mangle]
+pub extern "C" fn stack_pop(stack: *mut Stack<c_int>) -> c_int {
+    let stack = unsafe { &mut *stack };
+    stack.pop().unwrap_or(-1)
+}
+
+#[no_mangle]
+pub extern "C" fn stack_peek(stack: *const Stack<c_int>) -> c_int {
+    let stack = unsafe { &*stack };
+    stack.peek().copied().unwrap_or(-1)
+}
+
+#[no_mangle]
+pub extern "C" fn stack_size(stack: *const Stack<c_int>) -> usize {
+    let stack = unsafe { &*stack };
+    stack.size()
+}
+
+#[no_mangle]
+pub extern "C" fn stack_free(stack: *mut Stack<c_int>) {
+    unsafe {
+        drop(Box::from_raw(stack));
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn queue_new() -> *mut Queue<c_int> {
+    Box::into_raw(Box::new(Queue::new()))
+}
+
+#[no_mangle]
+pub extern "C" fn queue_enqueue(queue: *mut Queue<c_int>, value: c_int) {
+    let queue = unsafe { &mut *queue };
+    queue.enqueue(value);
+}
+
+#[no_mangle]
+pub extern "C" fn queue_dequeue(queue: *mut Queue<c_int>) -> c_int {
+    let queue = unsafe { &mut *queue };
+    queue.dequeue().unwrap_or(-1)
+}
+
+#[no_mangle]
+pub extern "C" fn queue_peek(queue: *const Queue<c_int>) -> c_int {
+    let queue = unsafe { &*queue };
+    queue.peek().copied().unwrap_or(-1)
+}
+
+#[no_mangle]
+pub extern "C" fn queue_size(queue: *const Queue<c_int>) -> usize {
+    let queue = unsafe { &*queue };
+    queue.size()
+}
+
+#[no_mangle]
+pub extern "C" fn queue_free(queue: *mut Queue<c_int>) {
+    unsafe {
+        drop(Box::from_raw(queue));
+    }
+}
+
+// === Тесты ===
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,7 +232,6 @@ mod tests {
         assert_eq!(stack.size(), 1);
         assert_eq!(stack.pop(), Some(1));
         assert_eq!(stack.pop(), None);
-        assert!(stack.is_empty());
     }
 
     #[test]
@@ -180,6 +247,5 @@ mod tests {
         assert_eq!(queue.size(), 1);
         assert_eq!(queue.dequeue(), Some(3));
         assert_eq!(queue.dequeue(), None);
-        assert!(queue.is_empty());
     }
 }

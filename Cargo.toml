@@ -3,4 +3,8 @@ name = "my_data_structures"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "my_data_structures"
+crate-type = ["cdylib", "rlib"]  # cdylib для C/Python, rlib для Rust
+
 [dependencies]

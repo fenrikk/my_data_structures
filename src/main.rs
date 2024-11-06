@@ -1,5 +1,4 @@
-mod lib;
-use lib::{LinkedList, Stack, Queue};
+use my_data_structures::{LinkedList, Stack, Queue};
 
 fn main() {
     println!("=== Testing Doubly Linked List ===");
